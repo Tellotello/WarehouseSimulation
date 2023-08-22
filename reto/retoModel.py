@@ -48,9 +48,9 @@ class RobotMobil(Agent):
         return self.sig_pos
     
   
-    def buscar_paquete(lista_vecinos):
+    # def buscar_paquete(lista_vecinos):
        
         
         
     
-        
+    
