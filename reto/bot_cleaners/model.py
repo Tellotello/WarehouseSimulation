@@ -13,6 +13,38 @@ import time
 import datetime
 
 
+
+"""
+CLASES RETO START
+"""
+class Estante(Agent):
+    posiciones = []
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+
+class Banda(Agent):
+    posiciones = []
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+        
+
+class EstacionDeCarga(Agent):
+    posiciones = []
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+        self.ocupada = False
+
+
+class RobotDeCarga(Agent):
+    posiciones = []
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+
+"""
+CLASES RETO END
+"""
+
+
 class Celda(Agent):
     def __init__(self, unique_id, model, suciedad: bool = False):
         super().__init__(unique_id, model)
