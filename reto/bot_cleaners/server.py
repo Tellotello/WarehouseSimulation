@@ -1,9 +1,31 @@
 import mesa
 
-from .model import Habitacion, RobotLimpieza, Celda, Mueble, EstacionDeCarga
+from .model import Estante, Banda, EstacionDeCarga, RobotDeCarga, Celda
+#from .model import Habitacion, RobotLimpieza, Celda, Mueble, EstacionDeCarga
 
 MAX_NUMBER_ROBOTS = 20
 
+## reto
+
+def agent_portrayal(agent):
+    if isinstance(agent, Estante):
+        return{"Shape": "rect", "Filled": "false", "Color": "orange", "Layer": 1, "w": 0.9, "h": 0.9}
+    elif isinstance(agent, Banda):
+        return{"Shape": "rect", "Filled": "true", "Color": "black", "Layer": 0, "w": 3, "h": 0.9}
+    elif isinstance(agent, EstacionDeCarga):
+        return{"Shape": "rect", "Filled": "true", "Color": "gray", "Layer": 0, "w": 0.9, "h": 0.9}
+    elif isinstance(agent, RobotDeCarga):
+        return{"Shape": "circle", "Filled": "true", "Color": "green", "Layer": 1, "r": 0.9}
+    elif isinstance(agent, Celda):
+        portrayal = {"Shape": "rect", "Filled": "true", "Layer": 0, "w": 0.9, "h": 0.9}
+        if agent.box:
+            portrayal["Color"] = "brown"
+        else:
+            portrayal["Color"] = "white"
+        return portrayal
+        
+
+## reto
 
 def agent_portrayal(agent):
     if isinstance(agent, RobotLimpieza):
