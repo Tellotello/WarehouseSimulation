@@ -17,6 +17,8 @@ import datetime
 """
 CLASES RETO START
 """
+M = N = 20
+
 class Estante(Agent):
     posiciones = []
     def __init__(self, unique_id, model):
