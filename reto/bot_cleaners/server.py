@@ -1,6 +1,6 @@
 import mesa
 
-from .model import Estante, Banda, EstacionDeCarga, RobotDeCarga
+from .model import Estante, BandaEntrada, BandaSalida, EstacionDeCarga, RobotDeCarga, Paquete
 from .model import Habitacion, RobotLimpieza, Celda, Mueble, EstacionDeCarga
 
 MAX_NUMBER_ROBOTS = 20
@@ -10,22 +10,18 @@ MAX_NUMBER_ROBOTS = 20
 def agent_portrayal(agent):
     if isinstance(agent, Estante):
         return{"Shape": "rect", "Filled": "true", "Color": "orange", "Layer": 1, "w": 0.9, "h": 0.9}
-    elif isinstance(agent, Banda):
-        return{"Shape": "rect", "Filled": "true", "Color": "black", "Layer": 0, "w": 3, "h": 0.9}
+    elif isinstance(agent, BandaEntrada) or isinstance(agent, BandaSalida):
+        return{"Shape": "rect", "Filled": "true", "Color": "black", "Layer": 0, "w": 1.9, "h": 0.9}
     elif isinstance(agent, EstacionDeCarga):
         return{"Shape": "rect", "Filled": "true", "Color": "gray", "Layer": 0, "w": 0.9, "h": 0.9}
     elif isinstance(agent, RobotDeCarga):
         return{"Shape": "circle", "Filled": "true", "Color": "green", "Layer": 1, "r": 0.9}
-    elif isinstance(agent, Celda):
-        portrayal = {"Shape": "rect", "Filled": "true", "Layer": 0, "w": 0.9, "h": 0.9}
-        #if agent.box:
-        if agent.sucia:
-            portrayal["Color"] = "ccbeaf"
-            portrayal["text"] = "📦"
-        else:
-            portrayal["Color"] = "white"
-            portrayal["text"] = ""
+    elif isinstance(agent, Paquete):
+        portrayal = {"Shape": "rect", "Filled": "true", "Layer": 2, "w": 0.7, "h": 0.7}
+        portrayal["Color"] = "#ccbeaf"
+        portrayal["text"] = "📦"
         return portrayal
+        
     
 grid = mesa.visualization.CanvasGrid(
     agent_portrayal, 15, 15, 300, 300)

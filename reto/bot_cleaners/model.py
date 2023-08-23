@@ -17,16 +17,83 @@ import datetime
 """
 CLASES RETO START Algo
 """
+
+def distancia_entre_puntos(p1, p2):
+    if p1 and p2:
+        term_x = (p2[0] - p1[0])**2
+        term_y = (p2[1] - p1[1])**2
+        distance = math.sqrt(term_x + term_y)
+        return distance
+    else:
+        return 1000
+
+def get_agentes_pos(model, pos):
+    agentes = model.grid.get_cell_list_contents([pos])
+    return agentes
+
+    
 M = N = 15
 
 class Estante(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
         # self.tipo = tipo
-
-class Banda(Agent):
+    
+class BandaSalida(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
+    
+    # def hay_paquete(self):
+    #     agentes_banda = get_agentes_pos(self.model, self.pos)
+    #     hay_paquete = False
+    #     for i in agentes_banda:
+    #         if isinstance(i, Paquete):
+    #             hay_paquete = True
+    #             break
+    #     return hay_paquete
+
+    
+    # def contratar_robot_recoger(self):
+    #     for i in RobotDeCarga.posiciones:
+    #         distancias_robots = [(i[1], distancia_entre_puntos(self.pos, i[1]))]
+        
+    #     indice_min_distancia = min(distancias_robots, key=lambda x: x[1])[0]
+    #     robot_cercano = get_agentes_pos(self.model, distancias_robots[indice_min_distancia][0])
+    #     robot_cercano.recorrido.append(self.pos)
+
+class BandaEntrada(Agent):
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+    
+
+    def hay_paquete(self):
+        agentes_banda = get_agentes_pos(self.model, self.pos)
+        hay_paquete = False
+        for i in agentes_banda:
+            if isinstance(i, Paquete):
+                hay_paquete = True
+                break
+        return hay_paquete
+    
+
+    
+    def contratar_robot_recoger(self):
+        for i in RobotDeCarga.posiciones:
+            distancias_robots = [(i[1], distancia_entre_puntos(self.pos, i[1]))]
+        
+        indice_min_distancia = min(distancias_robots, key=lambda x: x[1])[0]
+        robot_cercano = get_agentes_pos(self.model, distancias_robots[indice_min_distancia][0])
+        robot_cercano.recorrido.append(self.pos)
+
+
+
+    def step(self):
+
+        if self.hay_paquete():
+            self.contratar_robot_recoger()
+
+    def advance(self):
+        pass
         
 
 class EstacionDeCarga(Agent):
@@ -35,10 +102,57 @@ class EstacionDeCarga(Agent):
         self.ocupada = False
 
 
-class RobotDeCarga(Agent):
+
+class Paquete(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
         self.sig_pos = None
+
+class Pedido():
+    def __init__(self, tipo):
+        self.tipo = tipo
+
+class RobotDeCarga(Agent):
+    posiciones = [(0,(1,0))]
+    
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+        self.sig_pos = None
+        self.recorrido = []
+        RobotDeCarga.posiciones.append((self.unique_id, self.pos))
+
+    def dirigirse(self, pos_final, lista_de_vecinos):
+        distancias_vecinos = []
+        for i in range(len(lista_de_vecinos)):
+            # Que no sea mueble ni este en celdas limpias
+            agente_vecino = self.get_agente_from_pos(lista_de_vecinos[i].pos)
+
+            if isinstance(agente_vecino, Estante) != True and isinstance(agente_vecino, BandaEntrada) != True and isinstance(agente_vecino, BandaSalida) != True:
+                distancia = round(distancia_entre_puntos(agente_vecino.pos, pos_final), 3)
+                distancias_vecinos.append((i, distancia))
+
+
+        index_min_distancia = min(distancias_vecinos, key=lambda x: x[1])[0]
+        min_distancia = lista_de_vecinos[index_min_distancia]
+        self.sig_pos = min_distancia.pos
+
+
+    def step(self):
+        lista_de_vecinos = self.model.grid.get_neighbors(
+            self.pos, moore=True, include_center=False)
+        
+        for i in lista_de_vecinos:
+            if isinstance(i, BandaEntrada) and isinstance(i, Paquete):
+                print("Mover paquete")
+        
+        if len(self.recorrido) > 0:
+            self.dirigirse(self.recorrido[0])
+
+
+
+    def advance(self):
+            RobotDeCarga.posiciones[self.unique_id][1] = self.pos
+            self.model.grid.move_agent(self, self.sig_pos)
 
 """
 CLASES RETO END
@@ -301,7 +415,12 @@ class Habitacion(Model):
             [(9, 9), (9, 10), (9, 11), (9, 12), (10, 9), (10, 10), (10, 11), (10, 12)]
         ]
 
-        self.posiciones_bandas = [(0, 7), (14, 7)]
+        # Test
+        paquete = Paquete(1, self)
+        self.grid.place_agent(paquete, (1, 7))
+
+        self.posiciones_bandas = [(True, (1, 7)), (False, (14, 7))]
+        
 
         # Posicionamiento de estantes
         for i in range(len(self.posiciones_estantes)):
@@ -311,23 +430,11 @@ class Habitacion(Model):
                 posiciones_disponibles.remove(pos)
 
         # Posicionamiento bandas
-        for id, pos in enumerate(self.posiciones_bandas):
-            banda = Banda(id+1, self)
-            self.grid.place_agent(banda, pos)
-            posiciones_disponibles.remove(pos)
-        
-        # # Posicionamiento estaciones de carga
-        # for id, pos in enumerate(self.posiciones_estaciones_carga):
-        #     estacion = EstacionDeCarga(id+1, self)
-        #     self.grid.place_agent(estacion, pos)
-        #     posiciones_disponibles.remove(pos)
-
-
-        # Posicionamiento de agentes robot
-        # if modo_pos_inicial == 'Aleatoria':
-        #     pos_inicial_robots = self.random.sample(posiciones_disponibles, k=num_agentes)
-        # else:  # 'Fija'
-        #     pos_inicial_robots = [(1, 1)] * num_agentes
+        banda_entrada = BandaEntrada(101, self)
+        self.grid.place_agent(banda_entrada, (1, 7))
+        self.schedule.add(banda_entrada)
+        banda_salida = BandaSalida(1, self)
+        self.grid.place_agent(banda_salida, (14, 7))
 
 
         for id in range(self.num_agentes):
@@ -336,9 +443,11 @@ class Habitacion(Model):
             self.schedule.add(robot)
 
         self.datacollector = DataCollector(
-            model_reporters={"Grid": get_grid, "Cargas": get_cargas,
-                             "CeldasSucias": get_sucias},
+            model_reporters={},
         )
+    
+    def get_pos_estantes(self):
+        return self.posiciones_estantes
 
     def step(self):
 
@@ -347,202 +456,3 @@ class Habitacion(Model):
 """
 Modelo Reto END
 """
-# class Habitacion(Model):
-#     def __init__(self, M: int, N: int,
-#                  num_agentes: int = 5,
-#                  porc_celdas_sucias: float = 0.6,
-#                  porc_muebles: float = 0.1,
-#                  modo_pos_inicial: str = 'Fija',
-#                  ):
-
-#         self.tiempo_inicial = time.time()
-#         self.tiempo_final = 0
-#         self.num_agentes = num_agentes
-#         self.porc_celdas_sucias = porc_celdas_sucias
-#         self.porc_muebles = porc_muebles
-#         self.recargas = 0
-#         self.movimientos_totales = 0
-#         self.uso_energia = 0
-
-#         self.grid = MultiGrid(M, N, False)
-#         self.schedule = SimultaneousActivation(self)
-
-#         posiciones_disponibles = [pos for _, pos in self.grid.coord_iter()]
-        
-#         # Posicionamiento de estaciones de carga
-#         #Cuadrnte 1
-#         # (M//4, N//4) = (5, 5)
-
-#         #Cuadrante 2
-#         # (M//4, N*3//4) = (5, 15)
-
-#         #Cuadrante 3
-#         # (M*3//4, N//4) = (15, 5)
-
-#         #Cuadrante 4
-#         # (M*3//4, N*3//4) = (15, 15)
-
-
-#         self.posiciones_estaciones_carga = [(M//4, N//4),
-#                                        (M//4, N*3//4),
-#                                        (M*3//4, N//4),
-#                                        (M*3//4, N*3//4)]
-#         for id, pos in enumerate(self.posiciones_estaciones_carga):
-#             estacion = EstacionDeCarga(id+1, self)
-#             self.grid.place_agent(estacion, pos)
-#             posiciones_disponibles.remove(pos)
-#             #Fix the problem
-#             # 
-
-#         # Posicionamiento de muebles
-#         num_muebles = int(M * N * porc_muebles)
-#         posiciones_muebles = self.random.sample(posiciones_disponibles, k=num_muebles)
-        
-#         mueblesPos = posiciones_muebles.copy()
-
-#         # self.datacollector = DataCollector(
-#         #       model_reporters={"Tiempo_limpieza": self.get_grid,
-#         #                       "Movimientos_realizados": self.get_on_fire,
-#         #                        "Recargas": self.get_burned}
-#         #   )
-
-#         for id, pos in enumerate(posiciones_muebles):
-#             # print(pos)
-#             mueble = Mueble(int(f"{num_agentes}0{id}") + 1, self)
-#             self.grid.place_agent(mueble, pos)
-#             posiciones_disponibles.remove(pos)
-
-#         # Posicionamiento de celdas sucias
-#         self.num_celdas_sucias = int(M * N * porc_celdas_sucias)
-#         posiciones_celdas_sucias = self.random.sample(
-#             posiciones_disponibles, k=self.num_celdas_sucias)
-
-#         for id, pos in enumerate(posiciones_disponibles):
-#             suciedad = pos in posiciones_celdas_sucias
-#             celda = Celda(int(f"{num_agentes}{id}") + 1, self, suciedad)
-#             self.grid.place_agent(celda, pos)
-
-#         # Posicionamiento de agentes robot
-#         if modo_pos_inicial == 'Aleatoria':
-#             pos_inicial_robots = self.random.sample(posiciones_disponibles, k=num_agentes)
-#         else:  # 'Fija'
-#             pos_inicial_robots = [(1, 1)] * num_agentes
-
-
-#         for id in range(num_agentes):
-#             reverse_count = False
-#             recorrido = []
-#             # Crear un recorrido para cada robot dividido en zonas en base al numero de robots
-#             for i in range(M//num_agentes*id, M//num_agentes*id + M//num_agentes):
-#                 if reverse_count == False:
-#                     for n in range(M):
-#                         recorrido.append((i, n))
-#                     reverse_count = True
-#                 else:
-#                     for n in reversed(range(M)):
-#                         recorrido.append((i, n))
-#                     reverse_count = False
-#             robot = RobotLimpieza(id, self, mueblesPos, recorrido)
-#             self.grid.place_agent(robot, pos_inicial_robots[id])
-#             self.schedule.add(robot)
-
-#         self.datacollector = DataCollector(
-#             model_reporters={"Grid": get_grid, "Cargas": get_cargas,
-#                              "CeldasSucias": get_sucias},
-#         )
-
-#     def step(self):
-#         if get_sucias(self) != 0:
-#             self.datacollector.collect(self)
-
-#             self.schedule.step()
-#         else:
-#             if self.tiempo_final == 0:
-#                 self.tiempo_final = time.time()
-#             self.resultados()
-
-#     def agregar_recarga(self):
-#         self.recargas += 1
-    
-#     def agregar_uso_energia(self):
-#         self.uso_energia += 1
-
-#     def agregar_movimiento(self):
-#         self.movimientos_totales += 1
-
-#     def pos_estaciones_carga(self):
-#         return self.posiciones_estaciones_carga
-    
-#     def resultados(self):
-#         tiempo_limpieza = str(datetime.timedelta(seconds=(self.tiempo_final - self.tiempo_inicial)))
-#         movimientos_realizados = self.movimientos_totales
-#         recargas = self.recargas
-#         print(f'''
-#     Tiempo de lipieza: {tiempo_limpieza}
-#     Movimientos_realizados: {movimientos_realizados}
-#     Energia utilizada: {self.uso_energia}
-#     Cantidad de recargas: {recargas}
-#     Se usó {round(self.uso_energia/recargas, 2)}% de carga por cada recarga.
-#     ''')
-
-#     def todoLimpio(self):
-#         for (content, x, y) in self.grid.coord_iter():
-#             for obj in content:
-#                 if isinstance(obj, Celda) and obj.sucia:
-#                     return False
-#         return True
-    
-
-
- 
-
-
-def get_grid(model: Model) -> np.ndarray:
-    """
-    Método para la obtención de la grid y representarla en un notebook
-    :param model: Modelo (entorno)
-    :return: grid
-    """
-    grid = np.zeros((model.grid.width, model.grid.height))
-    for cell in model.grid.coord_iter():
-        cell_content, pos = cell
-        x, y = pos
-        for obj in cell_content:
-            if isinstance(obj, RobotLimpieza):
-                grid[x][y] = 2
-            elif isinstance(obj, Celda):
-                grid[x][y] = int(obj.sucia)
-    return grid
-
-
-def get_cargas(model: Model):
-    return [(agent.unique_id, agent.carga) for agent in model.schedule.agents]
-
-
-def get_sucias(model: Model) -> int:
-    """
-    Método para determinar el número total de celdas sucias
-    :param model: Modelo Mesa
-    :return: número de celdas sucias
-    """
-    sum_sucias = 0
-    for cell in model.grid.coord_iter():
-        cell_content, pos = cell
-        for obj in cell_content:
-            if isinstance(obj, Celda) and obj.sucia:
-                sum_sucias += 1
-    return sum_sucias / model.num_celdas_sucias
-
-
-def get_movimientos(agent: Agent) -> dict:
-    if isinstance(agent, RobotLimpieza):
-        return {agent.unique_id: agent.movimientos}
-    # else:
-    #    return 0(self, unique_id, model, suciedad: bool = False):
-        # super().__init__(unique_id, model)
-        # self.sucia = suciedad
-
-# def graficar():
-#     pass
-
-
