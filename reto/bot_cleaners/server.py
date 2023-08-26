@@ -1,7 +1,7 @@
 import mesa
 
 from .model import Estante, BandaEntrada, BandaSalida, EstacionDeCarga, RobotDeCarga, Paquete
-from .model import Habitacion, RobotLimpieza, Celda, Mueble, EstacionDeCarga
+from .model import Habitacion
 
 MAX_NUMBER_ROBOTS = 20
 
