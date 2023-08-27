@@ -11,6 +11,7 @@ import numpy as np
 import math
 import time
 import datetime
+import random
 
 
 
@@ -31,13 +32,31 @@ def get_agentes_pos(model, pos):
     agentes = model.grid.get_cell_list_contents([pos])
     return agentes
 
+def get_pos_cercana(pos, lista_pos):
+    distancias_lista = []
+
+    for i in range(len(lista_pos)):
+        distancia = round(distancia_entre_puntos(lista_pos[i], pos), 3)
+        distancias_lista.append((i, distancia))
+
+    # Asignar sig_pos solo si se encontraron vecinos que cumplan la condicion
+    if len(distancias_lista) > 0:
+        index_min_distancia = min(distancias_lista, key=lambda x: x[1])[0]
+        min_distancia = lista_pos[index_min_distancia]
+    # print(f'Se dirige a {pos} mediante {min_distancia}')
+    
+
+    return min_distancia
+        
+
     
 M = N = 15
 
 class Estante(Agent):
-    def __init__(self, unique_id, model):
+    def __init__(self, unique_id, model, tipo):
         super().__init__(unique_id, model)
-        # self.tipo = tipo
+        self.tipo = tipo 
+        self.ocupado = False
     
 class BandaSalida(Agent):
     def __init__(self, unique_id, model):
@@ -90,23 +109,24 @@ class BandaEntrada(Agent):
 
     
     def contratar_robot_recoger(self):
-        distancias_robots = []
+        pos_robots = []
         for i in Habitacion.robots:
             if self.contratado(i.unique_id) != True:
-                distancias_robots.append((i.pos, distancia_entre_puntos(self.pos, i.pos)))
+                pos_robots.append(i.pos)
         
-        # print(distancias_robots)
-        pos_min_distancia = min(distancias_robots, key=lambda x: x[1])[0]
+        pos_min_distancia = get_pos_cercana(self.pos, pos_robots)
+
         robot_cercano = get_agentes_pos(self.model, pos_min_distancia)[0]
         # print(f'Se contrato al robot {robot_cercano.unique_id} que se encuentra a una distancia de {pos_min_distancia} contra las distancias {distancias_robots}')
-        self.paquetes[0][1] = robot_cercano.unique_id # robot contratado
+        self.paquetes[-1][1] = robot_cercano.unique_id # robot contratado
         robot_cercano.recorrido.append(self.pos)
     
     def paquete_recogido(self, paquete_id):
         for i in self.paquetes:
             if i[0] == paquete_id:
-                id_registro_paquete = self.paquetes.index(i)
-                self.paquetes.pop(id_registro_paquete)
+                index_registro_paquete = self.paquetes.index(i)
+                self.paquetes.pop(index_registro_paquete)
+
     def contratado(self, robot_id):
         for i in self.paquetes:
             if i[1] == robot_id:
@@ -116,6 +136,7 @@ class BandaEntrada(Agent):
 
 
     def step(self):
+        print(f'Paquetes: {self.paquetes} de banda {self.unique_id}')
         # print(f'Paquetes: {self.paquetes}')
         self.registrar_paquetes()
         # print("Se checa si hay paquete")
@@ -133,9 +154,17 @@ class EstacionDeCarga(Agent):
 
 
 class Paquete(Agent):
-    def __init__(self, unique_id, model):
+    def __init__(self, unique_id, model, tipo):
         super().__init__(unique_id, model)
         self.sig_pos = None
+        self.tipo = tipo
+        self.entregado = False
+    
+    def step(self):
+        pass
+
+    def advance(self):
+        pass
 
 class Pedido():
     def __init__(self, tipo):
@@ -147,70 +176,120 @@ class RobotDeCarga(Agent):
         super().__init__(unique_id, model)
         self.sig_pos = None
         self.recorrido = []
-        # RobotDeCarga.posiciones.append((self.unique_id, self.pos))
 
-    def dirigirse(self, pos_final, lista_de_vecinos):
+        #Test
+        self.instancia_moviendo_paquete = None # Instancia de paquete moviendo
+        self.pos_entregar_paquete = None # Pos de estante en donde entregar el paquete
+
+    def lista_celdas_vecinas_disponibles(self, pos):
+            lista_de_celdas_vecinas = self.model.grid.get_neighborhood(
+            self.pos, 
+            moore=True,
+            include_center=False)
+
+            lista_de_vecinos_agentes = self.model.grid.get_neighbors(
+            self.pos, moore=True, include_center=False)
+
+            # Quitar la celdas vecinas que no esten disponibles
+            for i in lista_de_vecinos_agentes:
+                if isinstance(i, Estante) == True or isinstance(i, BandaEntrada) == True or isinstance(i, BandaSalida) == True:
+                    index_pos_agente = lista_de_celdas_vecinas.index(i.pos)
+                    lista_de_celdas_vecinas.pop(index_pos_agente)
+            
+
+            return lista_de_celdas_vecinas
+
+    def get_estante_entregar(self, tipo):
+        estantes = self.model.get_estantes(tipo)
+        posiciones_estantes = []
+        for i in estantes:
+            posiciones_estantes.append(i.pos)
+
+        pos_estante_cercano = get_pos_cercana(self.pos, posiciones_estantes)
+        estante_cercano = get_agentes_pos(self.model, pos_estante_cercano)[0]
+        estante_cercano.ocupado = True
+
+        # print(f'Posicion de estante cercano a {self.pos}: {estante_cercano}')
+        return pos_estante_cercano
+
+
+    def recoger_paquete(self, instancia_paquete):
+        # print(f'Robot {self.unique_id} recoger_paquete {instancia_paquete.unique_id}')
+        self.instancia_moviendo_paquete = instancia_paquete
+        # Test
+        estante_cercano = self.get_estante_entregar(instancia_paquete.tipo)
+        # print(f'robot {self.unique_id} append {estante_cercano}')
+        self.recorrido.append(estante_cercano)
+        self.pos_entregar_paquete = estante_cercano
+
+
+    def mover_paquete(self, instancia_paquete):
+        instancia_paquete.model.grid.move_agent(instancia_paquete, self.sig_pos)
+
+    def entregar_paquete(self, instancia_paquete, instancia_estante):
+        instancia_paquete.model.grid.move_agent(instancia_paquete, instancia_estante.pos)
+        instancia_paquete.pos = instancia_estante.pos
+        self.recorrido.pop(0)
+        self.instancia_moviendo_paquete = None
+        self.pos_entregar_paquete = None
+        instancia_paquete.entregado = True
+        self.model.get_banda_entrada().paquete_recogido(instancia_paquete.unique_id)
+
+
+    def dirigirse(self, pos_final):
+        
+        self.sig_pos = self.pos
+        print(f'------------\nRobot {self.unique_id}')
+        print(f'Con recorrido de: {self.recorrido}')
+
         if pos_final:
-            distancias_vecinos = []
-            vecinos_test = []
-            # print(f'longitud lista de vecinos: {len(lista_de_vecinos)}')
-            for i in range(len(lista_de_vecinos)):
+            lista_de_vecinos = self.lista_celdas_vecinas_disponibles(self.pos)
+            pos_cercana = get_pos_cercana(pos_final, lista_de_vecinos)
+            self.sig_pos = pos_cercana
 
-                # Que no sea mueble ni este en celdas limpias
-                # agente_vecino = get_agentes_pos(self.model, lista_de_vecinos[i].pos)[0]
-                # agente_vecino = lista_de_vecinos[i]
-                agente_vecino = get_agentes_pos(self.model, lista_de_vecinos[i])
-
-                # print(f'checamos si vecino en pos {agente_vecino.pos} pasa condicion')
-                if isinstance(agente_vecino, Estante) != True and isinstance(agente_vecino, BandaEntrada) != True and isinstance(agente_vecino, BandaSalida) != True:
-                    # print("paso condicion")
-                    # distancia = round(distancia_entre_puntos(agente_vecino.pos, pos_final), 3)
-                    distancia = round(distancia_entre_puntos(lista_de_vecinos[i], pos_final), 3)
-                    distancias_vecinos.append((i, distancia))
-                    # vecinos_test.append((agente_vecino.pos, distancia))
-                    vecinos_test.append((lista_de_vecinos[i], distancia))
-                # else:
-                    # print(f'vecino en pos {agente_vecino.pos} no paso la posicion')
-
-            # print(f"vecinos_test: {vecinos_test}")
-            if len(distancias_vecinos) > 0:
-                index_min_distancia = min(distancias_vecinos, key=lambda x: x[1])[0]
-                min_distancia = lista_de_vecinos[index_min_distancia]
-                self.sig_pos = min_distancia
-            else:
-                self.sig_pos = self.pos
-        else:
-            self.sig_pos = self.pos
-        # print(f'El robot {self.unique_id} se dirige a pos_final {pos_final} mediante {self.sig_pos} con las distancias de vecinos  {distancias_vecinos}')
 
 
     def step(self):
 
-        lista_de_vecinos = self.model.grid.get_neighbors(
-            self.pos, moore=True, include_center=False)
         lista_de_vecinos = self.model.grid.get_neighborhood(
             self.pos, 
-            moore=False,
-            include_center=False)
-        
-        for i in lista_de_vecinos:
-            agente = get_agentes_pos(self.model, i)
-            if len(agente) > 0:
-                agente = agente[0]
-                if isinstance(agente, BandaEntrada) and isinstance(i, Paquete):
-                    print("Mover paquete-------")
+            moore=True,
+            include_center=True)
+        print(f'Robot {self.unique_id} con paquete_en_movimiento = {self.instancia_moviendo_paquete}')
+        if self.instancia_moviendo_paquete == None:
+            print(f'Vecinos de la pos {self.pos} de agente {self.unique_id}')
+            for i in lista_de_vecinos:
+                agentes = get_agentes_pos(self.model, i)
+                if len(agentes) > 0:
+                    for agente in agentes:
+                        print(agente)
+                        if isinstance(agente, Paquete):
+                            print(f'Es el paquete {agente.unique_id} con entregado de: {agente.entregado}')
+                        if isinstance(agente, Paquete) and agente.entregado != True:
+                            if len(self.recorrido) > 0:
+                                self.recorrido.pop(0)
+                            print(f'El agente {self.unique_id} encontro paquete y lo va a recoger')
+                            self.recoger_paquete(agente)
+                            break
+        elif self.pos_entregar_paquete in lista_de_vecinos:
+            
+            self.entregar_paquete(self.instancia_moviendo_paquete, get_agentes_pos(self.model, self.pos_entregar_paquete)[0])
+
         
         if len(self.recorrido) > 0:
-            self.dirigirse(self.recorrido[0], lista_de_vecinos)
+            self.dirigirse(self.recorrido[0])
 
 
 
     def advance(self):
             # RobotDeCarga.posiciones[self.unique_id][1] = self.pos
             if not self.sig_pos:
-                self.sig_pos = self.pos 
-            
+                self.sig_pos = self.pos
             self.model.grid.move_agent(self, self.sig_pos)
+            if self.instancia_moviendo_paquete:
+                self.mover_paquete(self.instancia_moviendo_paquete)
+            
+                
 
 """
 CLASES RETO END
@@ -246,8 +325,11 @@ class Habitacion(Model):
         ]
 
         # Test
-        paquete = Paquete(1, self)
-        self.grid.place_agent(paquete, (1, 7))
+        # Hacer una lista de paquetes y cuando se recoja uno que se ponga otro y se tenga que contratar a otro robot
+            # Con tipo de entero random range(len(self.posicones_estantes))
+        # paquete = Paquete(1, self, 2)
+        # self.grid.place_agent(paquete, (1, 7))
+        self.index_paquete = 1000
 
         self.posiciones_bandas = [(True, (1, 7)), (False, (14, 7))]
         
@@ -255,7 +337,7 @@ class Habitacion(Model):
         # Posicionamiento de estantes
         for i in range(len(self.posiciones_estantes)):
             for id, pos in enumerate(self.posiciones_estantes[i]):
-                estante = Estante((id+1)*i, self)
+                estante = Estante((id+1)*i, self, i)
                 self.grid.place_agent(estante, pos)
                 posiciones_disponibles.remove(pos)
 
@@ -263,7 +345,7 @@ class Habitacion(Model):
         banda_entrada = BandaEntrada(101, self)
         self.grid.place_agent(banda_entrada, (1, 7))
         self.schedule.add(banda_entrada)
-        banda_salida = BandaSalida(1, self)
+        banda_salida = BandaSalida(102, self)
         self.grid.place_agent(banda_salida, (14, 7))
 
         # Posicionamiento de robots
@@ -280,12 +362,36 @@ class Habitacion(Model):
             model_reporters={},
         )
     
-    def get_pos_estantes(self):
-        return self.posiciones_estantes
+    
+    def get_estantes(self, tipo):
+        """
+        Get instancias de estantes disponibles
+        en base al tipo.
+        """
+        estantes_disponibles = []
+        for i in self.posiciones_estantes[tipo]:
+            estante = get_agentes_pos(self, i)[0]
+            if estante.ocupado != True:
+                estantes_disponibles.append(estante)
+        return estantes_disponibles
+    
+    def get_banda_entrada(self):
+        return get_agentes_pos(self, self.posiciones_bandas[0][1])[0]
 
     def step(self):
-
-            self.schedule.step()
+        agentes_banda = get_agentes_pos(self, self.posiciones_bandas[0][1])
+        hay_paquete = False
+        for i in agentes_banda:
+            if isinstance(i, Paquete):
+                hay_paquete = True
+                break
+        if hay_paquete != True:
+            paquete = Paquete(self.index_paquete, self, random.randint(0, 3))
+            self.grid.place_agent(paquete, self.posiciones_bandas[0][1])
+            self.schedule.add(paquete)
+            print(f'Se posicino paquete {self.index_paquete}')
+            self.index_paquete += 1
+        self.schedule.step()
     
 """
 Modelo Reto END

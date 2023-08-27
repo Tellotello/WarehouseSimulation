@@ -1,0 +1,17 @@
+- Acomodar paquete en base al tipo de paquete
+    -Funcion para calcularlo
+        Opciones:
+        -Dentro de Robot:
+            -En base al tipo ver cuales estan desocupadas de ese tipo
+- Programar muchos paquetes 
+    - Si se completa uno que se llame al otro 
+
+- Programar banda de salida
+    - Se generan pedidos de un tipo y se tienen que entregar
+    - Guardar el pedido en la banda
+    - Si se completa mostrar otro pedido
+
+
+
+- 
+
