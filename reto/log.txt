@@ -1,0 +1,104 @@
+
+Paquetes: [] de banda 101
+Se tiene la lista [(0, 0), (0, 1), (0, 2), (0, 3)] de la pos (1, 7)
+Se redujo a [(0, 7.071), (1, 6.083), (2, 5.099), (3, 4.123)]
+El recorrido del robot 3 es [(1, 7)]
+Robot 0 con paquete_en_movimiento = None
+Robot 1 con paquete_en_movimiento = None
+Robot 2 con paquete_en_movimiento = None
+Robot 3 con paquete_en_movimiento = None
+------------
+Robot 3
+Con recorrido de: [(1, 7)]
+Se tiene la lista [(0, 2), (0, 4), (1, 2), (1, 3), (1, 4)] de la pos (1, 7)
+Se redujo a [(0, 5.099), (1, 3.162), (2, 5.0), (3, 4.0), (4, 3.0)]
+Se asigno la pos (1, 4) al robot 3
+Paquetes: [[1000, 3]] de banda 101
+Robot 0 con paquete_en_movimiento = None
+Robot 1 con paquete_en_movimiento = None
+Robot 2 con paquete_en_movimiento = None
+Robot 3 con paquete_en_movimiento = None
+------------
+Robot 3
+Con recorrido de: [(1, 7)]
+Se tiene la lista [(0, 3), (0, 4), (0, 5), (1, 3), (1, 5), (2, 3), (2, 4), (2, 5)] de la pos (1, 7)
+Se redujo a [(0, 4.123), (1, 3.162), (2, 2.236), (3, 4.0), (4, 2.0), (5, 4.123), (6, 3.162), (7, 2.236)]
+Se asigno la pos (1, 5) al robot 3
+Paquetes: [[1000, 3]] de banda 101
+Robot 0 con paquete_en_movimiento = None
+Robot 1 con paquete_en_movimiento = None
+Robot 2 con paquete_en_movimiento = None
+Robot 3 con paquete_en_movimiento = None
+------------
+Robot 3
+Con recorrido de: [(1, 7)]
+Se tiene la lista [(0, 4), (0, 5), (0, 6), (1, 4), (1, 6), (2, 4), (2, 5), (2, 6)] de la pos (1, 7)
+Se redujo a [(0, 3.162), (1, 2.236), (2, 1.414), (3, 3.0), (4, 1.0), (5, 3.162), (6, 2.236), (7, 1.414)]
+Se asigno la pos (1, 6) al robot 3
+Paquetes: [[1000, 3]] de banda 101
+Robot 0 con paquete_en_movimiento = None
+Robot 1 con paquete_en_movimiento = None
+Robot 2 con paquete_en_movimiento = None
+Robot 3 con paquete_en_movimiento = None
+Se tiene la lista [(4, 9), (4, 10), (4, 11), (4, 12), (5, 9), (5, 10), (5, 11), (5, 12)] de la pos (1, 6)
+Se redujo a [(0, 4.243), (1, 5.0), (2, 5.831), (3, 6.708), (4, 5.0), (5, 5.657), (6, 6.403), (7, 7.211)]
+------------
+Robot 3
+Con recorrido de: [(4, 9)]
+Se tiene la lista [(0, 5), (0, 6), (0, 7), (1, 5), (2, 5), (2, 6), (2, 7)] de la pos (4, 9)
+Se redujo a [(0, 5.657), (1, 5.0), (2, 4.472), (3, 5.0), (4, 4.472), (5, 3.606), (6, 2.828)]la pos (2, 7) esta en la sig_pos de otro robotla pos (2, 7) esta en self.movimientos[-2]
+Se asigno la pos (2, 7) al robot 3
+Paquetes: [[1000, 3]] de banda 101
+Se tiene la lista [(0, 0), (0, 1), (0, 2)] de la pos (1, 7)
+Se redujo a [(0, 7.071), (1, 6.083), (2, 5.099)]
+El recorrido del robot 2 es [(1, 7)]
+Robot 0 con paquete_en_movimiento = None
+Robot 1 con paquete_en_movimiento = None
+Robot 2 con paquete_en_movimiento = None
+------------
+Robot 2
+Con recorrido de: [(1, 7)]
+Se tiene la lista [(0, 1), (0, 3), (1, 1), (1, 2), (1, 3)] de la pos (1, 7)
+Se redujo a [(0, 6.083), (1, 4.123), (2, 6.0), (3, 5.0), (4, 4.0)]
+Se asigno la pos (1, 3) al robot 2
+Robot 3 con paquete_en_movimiento = <bot_cleaners.model.Paquete object at 0x0000026D598D30D0>
+------------
+Robot 3
+Con recorrido de: [(4, 9)]
+Se tiene la lista [(1, 6), (1, 8), (2, 6), (2, 8), (3, 6), (3, 7), (3, 8)] de la pos (4, 9)
+Se redujo a [(0, 4.243), (1, 3.162), (2, 3.606), (3, 2.236), (4, 3.162), (5, 2.236), (6, 1.414)]la pos (3, 8) esta en la sig_pos de otro robotla pos (3, 8) esta en self.movimientos[-2]
+Se asigno la pos (3, 8) al robot 3
+Paquetes: [[1000, 3], [1001, 2]] de banda 101
+Robot 0 con paquete_en_movimiento = None
+Robot 1 con paquete_en_movimiento = None
+Robot 2 con paquete_en_movimiento = None
+------------
+Robot 2
+Con recorrido de: [(1, 7)]
+Se tiene la lista [(0, 2), (0, 3), (0, 4), (1, 2), (1, 4), (2, 2), (2, 3), (2, 4)] de la pos (1, 7)
+Se redujo a [(0, 5.099), (1, 4.123), (2, 3.162), (3, 5.0), (4, 3.0), (5, 5.099), (6, 4.123), (7, 3.162)]
+Se asigno la pos (1, 4) al robot 2
+Robot 3 con paquete_en_movimiento = <bot_cleaners.model.Paquete object at 0x0000026D598D30D0>
+Se eliminara la pos (4, 9) del robot 3 que se encuentra en (3, 8)
+Paquetes: [[1001, 2]] de banda 101
+Robot 0 con paquete_en_movimiento = None
+Robot 1 con paquete_en_movimiento = None
+Robot 2 con paquete_en_movimiento = None
+------------
+Robot 2
+Con recorrido de: [(1, 7)]
+Se tiene la lista [(0, 3), (0, 4), (0, 5), (1, 3), (1, 5), (2, 3), (2, 4), (2, 5)] de la pos (1, 7)
+Se redujo a [(0, 4.123), (1, 3.162), (2, 2.236), (3, 4.0), (4, 2.0), (5, 4.123), (6, 3.162), (7, 2.236)]
+Se asigno la pos (1, 5) al robot 2
+Robot 3 con paquete_en_movimiento = None
+Paquetes: [[1001, 2]] de banda 101
+Robot 0 con paquete_en_movimiento = None
+Robot 1 con paquete_en_movimiento = None
+Robot 2 con paquete_en_movimiento = None
+------------
+Robot 2
+Con recorrido de: [(1, 7)]
+Se tiene la lista [(0, 4), (0, 5), (0, 6), (1, 4), (1, 6), (2, 4), (2, 5), (2, 6)] de la pos (1, 7)
+Se redujo a [(0, 3.162), (1, 2.236), (2, 1.414), (3, 3.0), (4, 1.0), (5, 3.162), (6, 2.236), (7, 1.414)]la pos (1, 6) esta en la sig_pos de otro robotla pos (1, 6) esta en self.movimientos[-2]
+Se asigno la pos (1, 6) al robot 2
+Robot 3 con paquete_en_movimiento = None

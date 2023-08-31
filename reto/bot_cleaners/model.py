@@ -19,6 +19,11 @@ import random
 CLASES RETO START
 """
 
+def registrar_log(message):
+    with open("log.txt", 'a') as log:
+        log.write(message)
+        log.close
+
 def distancia_entre_puntos(p1, p2):
     if p1 and p2:
         term_x = (p2[0] - p1[0])**2
@@ -34,11 +39,13 @@ def get_agentes_pos(model, pos):
 
 def get_pos_cercana(pos, lista_pos):
     distancias_lista = []
+    registrar_log(f'\nSe tiene la lista {lista_pos} de la pos {pos}')
     print(f'Se tiene la lista {lista_pos} de la pos {pos}')
 
     for i in range(len(lista_pos)):
         distancia = round(distancia_entre_puntos(lista_pos[i], pos), 3)
         distancias_lista.append((i, distancia))
+    registrar_log(f'\nSe redujo a {distancias_lista}')
     print(f'Se redujo a {distancias_lista}')
     # Asignar sig_pos solo si se encontraron vecinos que cumplan la condicion
     if len(distancias_lista) > 0:
@@ -131,6 +138,7 @@ class BandaEntrada(Agent):
                 print(f'Se contrato al robot {i.unique_id} que se encuentra a una distancia de {pos_min_distancia} para ir a la pos {self.pos}')
                 self.paquetes[-1][1] = i.unique_id # robot contratado
                 i.recorrido.append(self.pos)
+                registrar_log(f'\nEl recorrido del robot {i.unique_id} es {i.recorrido}')
                 print(f'El recorrido del robot {i.unique_id} es {i.recorrido}')
                 return 0
             
@@ -151,6 +159,7 @@ class BandaEntrada(Agent):
 
 
     def step(self):
+        registrar_log(f'\nPaquetes: {self.paquetes} de banda {self.unique_id}')
         print(f'Paquetes: {self.paquetes} de banda {self.unique_id}')
         # print(f'Paquetes: {self.paquetes}')
         self.registrar_paquetes()
@@ -211,8 +220,9 @@ class RobotDeCarga(Agent):
         # Quitar la celdas vecinas que no esten disponibles
         for i in lista_de_vecinos_agentes:
             if isinstance(i, Estante) == True or isinstance(i, BandaEntrada) == True or isinstance(i, BandaSalida) == True:
-                index_pos_agente = lista_de_celdas_vecinas.index(i.pos)
-                lista_de_celdas_vecinas.pop(index_pos_agente)
+                if i.pos in lista_de_celdas_vecinas:
+                    index_pos_agente = lista_de_celdas_vecinas.index(i.pos)
+                    lista_de_celdas_vecinas.pop(index_pos_agente)
         
 
         return lista_de_celdas_vecinas
@@ -249,6 +259,7 @@ class RobotDeCarga(Agent):
     def entregar_paquete(self, instancia_paquete, instancia_estante):
         instancia_paquete.model.grid.move_agent(instancia_paquete, instancia_estante.pos)
         instancia_paquete.pos = instancia_estante.pos
+        registrar_log(f'\nSe eliminara la pos {self.recorrido[0]} del robot {self.unique_id} que se encuentra en {self.pos}')
         print(f'Se eliminara la pos {self.recorrido[0]} del robot {self.unique_id} que se encuentra en {self.pos}')
         self.recorrido.pop(0)
         self.instancia_moviendo_paquete = None
@@ -256,39 +267,55 @@ class RobotDeCarga(Agent):
         self.model.get_banda_entrada().paquete_recogido(instancia_paquete.unique_id)
     
     def posicion_verificada(self, sig_pos, pos_final):
-        if sig_pos not in Habitacion.sig_pos_robots and sig_pos != self.movimientos[-2]:
-            if sig_pos[1] <= pos_final[1]: 
-                if sig_pos[1] >= self.pos[1]:
+        #Test
+        sig_pos_otros_robots = [Habitacion.sig_pos_robots[i] for i in range(len(Habitacion.sig_pos_robots)) if i != self.unique_id]
+        # sig_pos_otros_robots = sig_pos_otros_robots.pop(self.unique_id)
+
+        if sig_pos not in sig_pos_otros_robots:
+            registrar_log(f'la pos {sig_pos} esta en la sig_pos de otro robot')
+        if sig_pos != self.movimientos[-2]:
+            registrar_log(f'la pos {sig_pos} esta en self.movimientos[-2]')
+        if sig_pos not in sig_pos_otros_robots and sig_pos != self.movimientos[-2]:
+
+            if sig_pos[0] <= pos_final[0]: 
+                if sig_pos[0] >= self.pos[0]:
                     return True
-            elif sig_pos[1] >= pos_final[1]:
-                if sig_pos[1] <= self.pos[1]:
+            elif sig_pos[0] >= pos_final[0]:
+                if sig_pos[0] <= self.pos[0]:
                     return True
+        registrar_log(f'La pos {sig_pos} no paso porque no paso la condicion del medio')
         return False
 
     def dirigirse(self, pos_final):
         
         self.sig_pos = self.pos
+        pos_cercana = None
+        registrar_log(f'\n------------\nRobot {self.unique_id}\nCon recorrido de: {self.recorrido}')
         print(f'------------\nRobot {self.unique_id}')
         print(f'Con recorrido de: {self.recorrido}')
 
         lista_de_vecinos = self.lista_celdas_vecinas_disponibles(self.pos)
         position_passes = False
 
-        if pos_final:
-            if len(self.movimientos) > 5:
-                while position_passes != True:
-                    pos_cercana = get_pos_cercana(pos_final, lista_de_vecinos)
-                    if self.posicion_verificada(pos_cercana, pos_final) != True:
-                        index_pos_repetida = lista_de_vecinos.index(pos_cercana)
-                        lista_de_vecinos.pop(index_pos_repetida)
-                    else:
-                        position_passes = True
-            else:
+        if pos_final and len(self.movimientos) > 2:
+            while position_passes != True:
                 pos_cercana = get_pos_cercana(pos_final, lista_de_vecinos)
-            self.sig_pos = pos_cercana
-            self.movimientos.append(pos_cercana)
-            print(f'Se asigno la pos {self.sig_pos} al robot {self.unique_id}')
-            Habitacion.sig_pos_robots[self.unique_id] = self.sig_pos
+                if self.posicion_verificada(pos_cercana, pos_final) == False:
+                    index_pos_cercana = lista_de_vecinos.index(pos_cercana)
+                    lista_de_vecinos.pop(index_pos_cercana)
+                else:
+                    position_passes = True
+        else:
+            pos_cercana = get_pos_cercana(pos_final, lista_de_vecinos)
+            
+
+        self.sig_pos = pos_cercana
+
+        self.movimientos.append(self.sig_pos)
+        registrar_log(f'\nSe asigno la pos {self.sig_pos} al robot {self.unique_id}')
+        print(f'Se asigno la pos {self.sig_pos} al robot {self.unique_id}')
+        print(f'self.unique_id: {self.unique_id}, len se sig_pos_robots: {len(Habitacion.sig_pos_robots)}')
+        Habitacion.sig_pos_robots[self.unique_id] = self.sig_pos
 
         # Test Debug
         if len(self.movimientos) > 10:
@@ -301,6 +328,33 @@ class RobotDeCarga(Agent):
                 # coordenada_nueva = (self.recorrido[0][0], self.recorrido[0][1]+1)
                 # self.recorrido.insert(0, coordenada_nueva)
 
+#https://www.youtube.com/watch?v=-L-WgKMFuhE&t=349s
+    def a_star_find_path(self, pos):
+        pos_node = {
+            "position": pos, 
+            "f_cost": distancia_entre_puntos(pos, )
+            }
+        open = list()
+        closed = list()
+        open.append(pos)
+
+        current = min()
+
+
+    # A Star Algo
+    def A_star_path(self):
+
+        class Node():
+            def __init__(self, coord, f_cost, last_pos):
+                self.coord = coord
+                self.f_cost = f_cost
+                self.last_pos = last_pos
+
+        
+        class Queue():
+            def __init__(self):
+                self.queue = []
+                
 
 
     def step(self):
@@ -309,6 +363,7 @@ class RobotDeCarga(Agent):
             self.pos, 
             moore=True,
             include_center=True)
+        registrar_log(f'\nRobot {self.unique_id} con paquete_en_movimiento = {self.instancia_moviendo_paquete}')
         print(f'Robot {self.unique_id} con paquete_en_movimiento = {self.instancia_moviendo_paquete}')
         if self.instancia_moviendo_paquete == None:
             # print(f'Vecinos de la pos {self.pos} de agente {self.unique_id}')
@@ -413,6 +468,7 @@ class Habitacion(Model):
             robot = RobotDeCarga(id, self)
             self.grid.place_agent(robot, (0, id))
             self.schedule.add(robot)
+            # if len(Habitacion.sig_pos_robots) < id+1:
             Habitacion.sig_pos_robots.append((0, 0))
             if len(Habitacion.robots) < id+1:
                 Habitacion.robots.append(robot)
