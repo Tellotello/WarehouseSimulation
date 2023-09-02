@@ -133,7 +133,8 @@ class BandaEntrada(Agent):
         for i in robot_cercano:
             if isinstance(i, RobotDeCarga):
                 self.paquetes[-1][1] = i.unique_id # robot contratado
-                i.recorrido.append(self.pos)
+                # i.recorrido.append(self.pos)
+                i.recorrido += i.a_star_path(i.pos, self.pos)
                 registrar_log(f'\nEl recorrido del robot {i.unique_id} es {i.recorrido}')
                 return 0
             
@@ -202,12 +203,12 @@ class RobotDeCarga(Agent):
 
     def lista_celdas_vecinas_disponibles(self, pos):
         lista_de_celdas_vecinas = self.model.grid.get_neighborhood(
-        self.pos, 
+        pos, 
         moore=True,
         include_center=False)
 
         lista_de_vecinos_agentes = self.model.grid.get_neighbors(
-        self.pos, moore=True, include_center=False)
+        pos, moore=True, include_center=False)
 
         # Quitar la celdas vecinas que no esten disponibles
         for i in lista_de_vecinos_agentes:
@@ -236,7 +237,8 @@ class RobotDeCarga(Agent):
         self.instancia_moviendo_paquete = instancia_paquete
         # Test
         estante_cercano = self.get_estante_entregar(instancia_paquete.tipo)
-        self.recorrido.append(estante_cercano)
+        # self.recorrido.append(estante_cercano)
+        self.recorrido += self.a_star_path(self.pos, estante_cercano)
         self.pos_entregar_paquete = estante_cercano
         instancia_paquete.no_disponible = True
 
@@ -248,67 +250,68 @@ class RobotDeCarga(Agent):
     def entregar_paquete(self, instancia_paquete, instancia_estante):
         instancia_paquete.model.grid.move_agent(instancia_paquete, instancia_estante.pos)
         instancia_paquete.pos = instancia_estante.pos
-        registrar_log(f'\nSe eliminara la pos {self.recorrido[0]} del robot {self.unique_id} que se encuentra en {self.pos}')
-        self.recorrido.pop(0)
+        # registrar_log(f'\nSe eliminara la pos {self.recorrido[0]} del robot {self.unique_id} que se encuentra en {self.pos}')
+        # self.recorrido.pop(0)
         self.instancia_moviendo_paquete = None
         self.pos_entregar_paquete = None
         self.model.get_banda_entrada().paquete_recogido(instancia_paquete.unique_id)
     
-    def posicion_verificada(self, sig_pos, pos_final):
-        #Test
-        sig_pos_otros_robots = [Habitacion.sig_pos_robots[i] for i in range(len(Habitacion.sig_pos_robots)) if i != self.unique_id]
-        # sig_pos_otros_robots = sig_pos_otros_robots.pop(self.unique_id)
+    # def posicion_verificada(self, sig_pos, pos_final):
+    #     #Test
+    #     sig_pos_otros_robots = [Habitacion.sig_pos_robots[i] for i in range(len(Habitacion.sig_pos_robots)) if i != self.unique_id]
+    #     # sig_pos_otros_robots = sig_pos_otros_robots.pop(self.unique_id)
 
-        if sig_pos not in sig_pos_otros_robots:
-            registrar_log(f'la pos {sig_pos} esta en la sig_pos de otro robot')
-        if sig_pos != self.movimientos[-2]:
-            registrar_log(f'la pos {sig_pos} esta en self.movimientos[-2]')
-        if sig_pos not in sig_pos_otros_robots and sig_pos != self.movimientos[-2]:
+    #     if sig_pos not in sig_pos_otros_robots:
+    #         registrar_log(f'la pos {sig_pos} esta en la sig_pos de otro robot')
+    #     if sig_pos != self.movimientos[-2]:
+    #         registrar_log(f'la pos {sig_pos} esta en self.movimientos[-2]')
+    #     if sig_pos not in sig_pos_otros_robots and sig_pos != self.movimientos[-2]:
 
-            if sig_pos[0] <= pos_final[0]: 
-                if sig_pos[0] >= self.pos[0]:
-                    return True
-            elif sig_pos[0] >= pos_final[0]:
-                if sig_pos[0] <= self.pos[0]:
-                    return True
-        registrar_log(f'La pos {sig_pos} no paso porque no paso la condicion del medio')
-        return False
+    #         if sig_pos[0] <= pos_final[0]: 
+    #             if sig_pos[0] >= self.pos[0]:
+    #                 return True
+    #         elif sig_pos[0] >= pos_final[0]:
+    #             if sig_pos[0] <= self.pos[0]:
+    #                 return True
+    #     registrar_log(f'La pos {sig_pos} no paso porque no paso la condicion del medio')
+    #     return False
 
-    def dirigirse(self, pos_final):
+    # def dirigirse(self, pos_final):
         
-        self.sig_pos = self.pos
-        pos_cercana = None
+    #     self.sig_pos = self.pos
+    #     pos_cercana = None
 
 
-        lista_de_vecinos = self.lista_celdas_vecinas_disponibles(self.pos)
-        position_passes = False
+    #     lista_de_vecinos = self.lista_celdas_vecinas_disponibles(self.pos)
+    #     position_passes = False
 
-        if pos_final and len(self.movimientos) > 2:
-            while position_passes != True:
-                pos_cercana = get_pos_cercana(pos_final, lista_de_vecinos)
-                if self.posicion_verificada(pos_cercana, pos_final) == False:
-                    index_pos_cercana = lista_de_vecinos.index(pos_cercana)
-                    lista_de_vecinos.pop(index_pos_cercana)
-                else:
-                    position_passes = True
-        else:
-            pos_cercana = get_pos_cercana(pos_final, lista_de_vecinos)
+    #     if pos_final and len(self.movimientos) > 2:
+    #         while position_passes != True:
+    #             pos_cercana = get_pos_cercana(pos_final, lista_de_vecinos)
+    #             if self.posicion_verificada(pos_cercana, pos_final) == False:
+    #                 index_pos_cercana = lista_de_vecinos.index(pos_cercana)
+    #                 lista_de_vecinos.pop(index_pos_cercana)
+    #             else:
+    #                 position_passes = True
+    #     else:
+    #         pos_cercana = get_pos_cercana(pos_final, lista_de_vecinos)
             
 
-        self.sig_pos = pos_cercana
+    #     self.sig_pos = pos_cercana
 
-        self.movimientos.append(self.sig_pos)
-        registrar_log(f'\nSe asigno la pos {self.sig_pos} al robot {self.unique_id}')
-        Habitacion.sig_pos_robots[self.unique_id] = self.sig_pos
+    #     self.movimientos.append(self.sig_pos)
+    #     registrar_log(f'\nSe asigno la pos {self.sig_pos} al robot {self.unique_id}')
+    #     Habitacion.sig_pos_robots[self.unique_id] = self.sig_pos
 
 
     # A Star Algo
-    def a_star_path(self, actual_pos, pos_final):
-
+    def a_star_path(self, pos_inicial, pos_final):
         class Node():
-            def __init__(self, coord, f_cost, viene_de):
+            def __init__(self, coord, g_cost, h_cost, viene_de):
                 self.coord = coord
-                self.f_cost = f_cost
+                self.g_cost = g_cost
+                self.h_cost = h_cost
+                self.f_cost = g_cost + h_cost
                 self.viene_de = viene_de
 
         class Queue():
@@ -316,59 +319,77 @@ class RobotDeCarga(Agent):
                 self.queue = []
             
             def push(self, node):
-                for i in range(len(self.queue)):
-                    if self.queue[i].f_cost <= node.f_cost:
-                        self.queue.insert(i, node)
-                        break
+                if len(self.queue) == 0:
+                    self.queue.append(node)
+                else:
+                    for i in range(len(self.queue)):
+                        if i == len(self.queue)-1:
+                            self.queue.append(node)
+                        elif self.queue[i].f_cost < node.f_cost:
+                            self.queue.insert(i, node)
+                            break
             
             def pop(self):
                 self.queue.pop()
             
             def get_head(self):
                 return self.queue[-1]
+            
+            def get_size(self):
+                return len(self.queue)
+            
 
 
-        nodo_actual = Node(actual_pos, 0, actual_pos)
+        nodo_actual = Node(pos_inicial, 0, 0, None)
         open = Queue()
         open.push(nodo_actual)
         pos_encontrada = False
         closed = list()
 
+        pos_visitadas = []
         while pos_encontrada != True:
+            lista_de_celdas_vecinas = self.model.grid.get_neighborhood(
+            nodo_actual.coord, 
+            moore=True,
+            include_center=False)
+
+            if pos_final in lista_de_celdas_vecinas or distancia_entre_puntos(nodo_actual.coord, pos_final) < 2:
+                # print(f'Se encontro la pos {pos_final} en los vecinos de {nodo_actual.coord} que son {lista_de_celdas_vecinas}')
+                pos_encontrada = True
+                break
 
             open.pop()
-            lista_vecinos = self.model.grid.get_neighborhood(
-                nodo_actual.coord, 
-                moore=True,
-                include_center=False)
-            
+            lista_vecinos = self.lista_celdas_vecinas_disponibles(nodo_actual.coord)   
+
             for i in lista_vecinos:
-                g_cost = nodo_actual.f_cost + 1
-                h_cost = distancia_entre_puntos(i, pos_final)
-                f_cost = g_cost + h_cost
-                vertice = Node(i, f_cost, nodo_actual)
-                open.push(vertice)
-            
+                if i not in pos_visitadas:
+                    g_cost = nodo_actual.g_cost+1
+                    h_cost = distancia_entre_puntos(i, pos_final)
+                    vertice = Node(i, g_cost, h_cost, nodo_actual)
+                    open.push(vertice)
+                    pos_visitadas.append(i)
+                    # for n in closed:
+                    #     if n.coord == i and n.f_cost > vertice.f_cost:
+                    #         n = vertice
+                    #         break
+                    # print(vertice.f_cost)
             nodo_actual = open.get_head()
             closed.append(nodo_actual)
 
-            if nodo_actual.coord == pos_final:
-                pos_encontrada = True
-        
-        camino = []
-        while nodo_actual.coord != actual_pos:
-            camino.append(nodo_actual.viene_de.coord)
 
-        print(f"\n\nSe encontro el camino mas corto de {actual_pos} a {pos_final}:")
+        camino = []
+        while nodo_actual.coord != pos_inicial:
+            camino.insert(0, nodo_actual.coord)
+            nodo_actual = nodo_actual.viene_de
+
         print(camino)
+        return camino
             
 
         
 
-                
-
-
     def step(self):
+        print(self.recorrido)
 
         lista_de_vecinos = self.model.grid.get_neighborhood(
             self.pos, 
@@ -380,13 +401,14 @@ class RobotDeCarga(Agent):
                 agentes = get_agentes_pos(self.model, i)
                 if len(agentes) > 0:
                     for agente in agentes:
-                        if isinstance(agente, Paquete) and agente.no_disponible != True:
+                        if isinstance(agente, Paquete) and agente.no_disponible == False:
                             if len(self.recorrido) > 0:
                                 self.recorrido.pop(0)
-                                self.a_star_path(self.pos, (7, 7))
+                                # self.a_star_path(self.pos, (7, 7))
 
                             self.recoger_paquete(agente)
                             break
+
         elif self.pos_entregar_paquete in lista_de_vecinos:
             agentes_pos_entregar = get_agentes_pos(self.model, self.pos_entregar_paquete)
             for i in agentes_pos_entregar:
@@ -395,14 +417,18 @@ class RobotDeCarga(Agent):
                     break
 
         
-        if len(self.recorrido) > 0:
-            self.dirigirse(self.recorrido[0])
+        # if len(self.recorrido) > 0:
+            # self.dirigirse(self.recorrido[0])
+        if len(self.recorrido) == 0:
+            self.sig_pos = self.pos
+        else:
+            self.sig_pos = self.recorrido[0]
+            self.recorrido.pop(0)
+
 
 
 
     def advance(self):
-        if not self.sig_pos:
-            self.sig_pos = self.pos
 
         self.model.grid.move_agent(self, self.sig_pos)
         if self.instancia_moviendo_paquete:
@@ -448,8 +474,8 @@ class Habitacion(Model):
         # Test
         # Hacer una lista de paquetes y cuando se recoja uno que se ponga otro y se tenga que contratar a otro robot
             # Con tipo de entero random range(len(self.posicones_estantes))
-        # paquete = Paquete(1, self, 2)
-        # self.grid.place_agent(paquete, (1, 7))
+        paquete = Paquete(1, self, 2)
+        self.grid.place_agent(paquete, (1, 7))
         self.index_paquete = 1000
 
         self.posiciones_bandas = [(True, (1, 7)), (False, (14, 7))]
