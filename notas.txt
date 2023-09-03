@@ -1,10 +1,3 @@
-- Acomodar paquete en base al tipo de paquete
-    -Funcion para calcularlo
-        Opciones:
-        -Dentro de Robot:
-            -En base al tipo ver cuales estan desocupadas de ese tipo
-- Programar muchos paquetes 
-    - Si se completa uno que se llame al otro 
 
 - Programar banda de salida
     - Se generan pedidos de un tipo y se tienen que entregar
@@ -13,5 +6,48 @@
 
 
 
--  
+- Sistema de actividadefa-spin
+    - Se contrata robot
+    - Se asigna una actividad en forma de (id_actividad, coord_final) y recorrido correspondiente
+        - Se pueden asignar 2 actividades como recoger y almacenar
+    - Cuando se almacena el paquete se retira la actividad de la lista
+
+Actividades:
+1. Recoger paquete de bandaEntrada
+2. Almacenar paquete
+3. Recoger paquete de estante
+4. Entregar paquete en bandaSalida
+5. Cargarse
+
+Ejemplo: recoger paquete y almacenarlo
+    Opcion 1:
+        - Contratar al robot
+            - Asignarle actividad (1, posBanda)
+        - Si el recorrido del robot esta vacio, calcular recorrido de la primer actividad en la lista
+        - Si no moverse como el recorrido lo indica
+        - Si la posicion final de la actividad esta en los vecinos
+            - Hacer un elif con cada tipo de actividad
+            - Si actividad actual[0] == 1, buscar en los vecinos el paquete y recogerlo
+                - Cuando lo recoge calcula la coord del estante del tipo mas cercano y agregar una actividad (de tipo 2)
+
+
+pedidos
+- Checar si pedidos en self.model.pedidos estan registrados:
+    - Si no esta registrado:
+        - Registrarlos como un contrato con robot contratado de -1
+- Si hay pedidos si robot contratado y hay robots disponibles
+    - Contratarle un robot a los pedidos
+
+
+Checar que el agente sea agente y no NoneType
+
+Para act 4 agarra al robot mas cerca de la banda de salida, no del paquete
+    
+
+
+
+
+
+
+
 
