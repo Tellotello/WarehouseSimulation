@@ -1,9 +1,34 @@
+
 from flask import Flask, request, jsonify
+
+# Variable to store the last updated simulation data and simulation parameters
+simulation_data = {}
+num_robots = None  # Variable to hold the number of robots
 
 app = Flask(__name__)
 
-# Variable to store the last updated simulation data
-simulation_data = {}
+@app.route('/api/params', methods=['POST', 'GET'])
+def set_params():
+    global num_robots  # Declare as global to modify
+    try:
+        if request.method == 'POST':
+            # Parse the number of robots from the incoming POST request
+            data = request.json  # Parse JSON data
+            num_robots = int(data['num_robots'])
+
+            # Here, set this parameter for your Mesa Model
+            # ...
+
+            return jsonify({"status": "Parameters set successfully!"}), 200
+        
+        elif request.method == 'GET':
+            # Return the current number of robots
+            return jsonify({"num_robots": num_robots}), 200
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({"status": "error"}), 500
+
 
 @app.route('/api/update', methods=['POST', 'GET'])
 def update():
