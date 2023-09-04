@@ -710,6 +710,8 @@ class Habitacion(Model):
             [(9, 9), (9, 10), (9, 11), (9, 12), (10, 9), (10, 10), (10, 11), (10, 12)]
         ]
 
+        self.posiciones_estaciones_carga = [(2, 0), (12, 0), (2, 14), (12, 14)]
+
         # Test
         # Hacer una lista de paquetes y cuando se recoja uno que se ponga otro y se tenga que contratar a otro robot
             # Con tipo de entero random range(len(self.posicones_estantes))
@@ -728,6 +730,13 @@ class Habitacion(Model):
                 posiciones_disponibles.remove(pos)
                 self.schedule.add(estante)
 
+        # Posicionamiento de estaciones de carga
+        for i in range(len(self.posiciones_estaciones_carga)):
+            estacion_de_carga = EstacionDeCarga((10000-i-1)*(i+1), self)
+            self.grid.place_agent(estacion_de_carga, self.posiciones_estaciones_carga[i])
+            posiciones_disponibles.remove(self.posiciones_estaciones_carga[i])
+            self.schedule.add(estacion_de_carga)
+
         # Posicionamiento bandas
         banda_entrada = BandaEntrada(101, self)
         self.grid.place_agent(banda_entrada, self.posiciones_bandas[0][1])
@@ -735,6 +744,8 @@ class Habitacion(Model):
         banda_salida = BandaSalida(102, self)
         self.grid.place_agent(banda_salida, self.posiciones_bandas[1][1])
         self.schedule.add(banda_salida)
+
+
 
         # Posicionamiento de robots
         for id in range(self.num_agentes):
