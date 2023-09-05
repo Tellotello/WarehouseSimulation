@@ -153,8 +153,10 @@ class BandaSalida(Agent):
                     cuenta += 1
                     # return True
         if cuenta > 3:
+            registrar_log(f'\nHay paquete de tipo {tipo} disponible')
             return True
         else:
+            registrar_log(f'\nNo hay paquete de tipo {tipo} disponible')
             return False
         # return False
 
@@ -168,7 +170,12 @@ class BandaSalida(Agent):
             # if len(i.actividades) < 3 and i.ocupado == False:
             if  i.ocupado == False:
                 pos_robots.append(i.pos)
+        if len(pos_robots) == 0:
+            for i in Habitacion.robots:
+                if len(i.actividades) < 3:
+                    pos_robots.append(i.pos)
         if pos_robots:
+            registrar_log(f'\n Si hay robots disponibles')
         
             
             pos_min_distancia = get_pos_cercana(self.pos, pos_robots)
@@ -176,15 +183,12 @@ class BandaSalida(Agent):
             robot_cercano = get_agentes_pos(self.model, pos_min_distancia)
             for i in robot_cercano:
                 if isinstance(i, RobotDeCarga):
-                    # n.id_robot = i.unique_id
-                    # self.paquetes[-1].id_robot = i.unique_id # robot contratado
-                    # i.recorrido += i.a_star_path(i.pos, self.pos)
-                    # id_paquete, pos_paquete = i.get_paquete_cercano(n.tipo_pedido)
-                    # recoger_act = Actividad(3, pos_paquete, id_paquete)
                     entregar_act = Actividad(4, self.pos, tipo, id_pedido=id_pedido)
-                    # i.actividades.append(recoger_act)
                     i.actividades.append(entregar_act)
                     return i.unique_id
+        else:
+            registrar_log('\nNo hay robots disponibles')
+            return -1
             
 
     
@@ -193,21 +197,11 @@ class BandaSalida(Agent):
                 if self.contratos_pedidos[i].id_pedido == id_pedido:
                     self.contratos_pedidos.pop(i)
                     break
-                            #Remover de pedidos en modelo
+                #Remover de pedidos en modelo
                 for i, p in enumerate(self.model.pedidos):
                     if p.id == id_pedido:
                         self.model.pedidos.pop(i)
-            # agentes_banda = get_agentes_pos(self.model, self.pos)
 
-            #Test
-            # for n in agentes_banda:
-            #     if isinstance(n, Paquete) and n.unique_id == paquete_id:
-            #         self.model.grid.remove_agent(n)
-            #         self.model.schedule.remove(n)
-            #         #Remover de pedidos en modelo
-            #         for i, p in enumerate(self.model.pedidos):
-            #             if p.id == id_pedido:
-            #                 self.model.pedidos.pop(i)
                             
 
     def contratado(self, robot_id):
@@ -279,6 +273,11 @@ class BandaEntrada(Agent):
             # if i.ocupado == False and len(i.actividades) < 3:
             if i.ocupado == False:
                 pos_robots.append(i.pos)
+
+        if len(pos_robots) == 0:
+            for i in Habitacion.robots:
+                if len(i.actividades) < 3:
+                    pos_robots.append(i.pos)
         if pos_robots:
             
             pos_min_distancia = get_pos_cercana(self.pos, pos_robots)
@@ -322,6 +321,16 @@ class EstacionDeCarga(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
         self.ocupada = False
+    
+    def step(self):
+        agentes_estacion_carga = get_agentes_pos(self.model, self.pos)
+        for i in agentes_estacion_carga:
+            if isinstance(i, RobotDeCarga):
+                if i.carga+25 > 100:
+                    i.carga = 100
+                else:
+                    i.carga += 25
+                
 
 
 
@@ -344,6 +353,7 @@ class RobotDeCarga(Agent):
         self.recorrido = []
         self.ocupado = False
         self.id_paquete_recoger = None
+        self.carga = 100
 
         #Test
         self.instancia_moviendo_paquete = None # Instancia de paquete moviendo
@@ -564,7 +574,7 @@ class RobotDeCarga(Agent):
         
     def step(self):
 
-        registrar_log(f'\n El robot {self.unique_id} se encuentra en {self.pos}, ocupado de: {self.ocupado}, con recorrido de {self.recorrido}, instancia_paquete: {type(self.instancia_moviendo_paquete)} y {len(self.actividades)} actividades')
+        registrar_log(f'\n El robot {self.unique_id} se encuentra en {self.pos}, carga de: {self.carga}, ocupado de: {self.ocupado}, con recorrido de {self.recorrido}, instancia_paquete: {type(self.instancia_moviendo_paquete)} y {len(self.actividades)} actividades')
         registrar_log(f'\nACTIVIDADES Robot {self.unique_id}')
         for a in self.actividades:
             registrar_log(f'\n id_act: {a.tipo_actividad}, pos_final: {a.pos_final}, tipo_pedido: {a.tipo_pedido}, id_pedido: {a.id_pedido}')
@@ -575,29 +585,61 @@ class RobotDeCarga(Agent):
             moore=True,
             include_center=True)
 
-        if len(self.actividades) == 0:
-            self.sig_pos = self.pos
-        else:
+        if len(self.actividades) > 0:
+        #     self.sig_pos = self.pos
+        #     registrar_log(f'\n1. No hay actividades, sig_pos = pos')
+        # else:
+            registrar_log(f'\n2. Si hay actividades')
             actividad_actual = self.actividades[0]
 
-            # Si la posicion final de la actividad esta en los vecinos
-            # elif actividad_actual.tipo_actividad == 4 and self.instancia_moviendo_paquete == None and len(self.recorrido) == 0:
-            if actividad_actual.tipo_actividad == 4 and self.instancia_moviendo_paquete == None and len(self.recorrido) == 0:
-            # if actividad_actual.tipo_actividad == 4 and self.id_paquete_recoger == None:
-                if self.model.get_banda_salida().hay_disponible(actividad_actual.tipo_pedido):
-                    id_paquete, pos_paquete = self.get_paquete_cercano(actividad_actual.tipo_pedido)
-                    registrar_log("\n=======Entre a la condicion rara")
-                    registrar_log(f'\nid_paquete: {id_paquete}, pos_paquete: {pos_paquete}, tipo: {actividad_actual.tipo_pedido}, pos_actual: {self.pos}')
-                    self.id_paquete_recoger = id_paquete
-                    actividad_recoger = Actividad(3, pos_paquete, actividad_actual.tipo_pedido)
-                    self.ocupado= True
-                    self.actividades.insert(0, actividad_recoger)
+
+            # Intentar hacer la funcion de irse a cargar dinamica
+            # Quedarse cargando hasta 100%
+            if actividad_actual.tipo_actividad == 5 and self.pos == actividad_actual.pos_final and self.carga == 100:
+                registrar_log(f'\n2.1 Se entro a act 5')
+                agentes_estacion_carga = get_agentes_pos(self.model, actividad_actual.pos_final)
+                for i in agentes_estacion_carga:
+                    if isinstance(i, EstacionDeCarga):
+                        i.ocupada = False
+                self.actividades.pop(0)
+            # Irse a cargar
+            elif self.carga < 60 and self.instancia_moviendo_paquete == None and len(self.recorrido) == 0 and actividad_actual.tipo_actividad != 5:
+                pos_cargadores_disponibles = self.model.get_estaciones_disponibles()
+                registrar_log(f'\n2.2 Se entro a menos de 60 de pila')
+                registrar_log(f'\npos_cargadores_disponibles: {pos_cargadores_disponibles}')
+                registrar_log(f'\n Se entro a carga menos de 60')
+                pos_cargador_cercano = get_pos_cercana(self.pos, pos_cargadores_disponibles)
+                if pos_cargador_cercano != self.pos:
+                    self.recorrido = []
+                    actividad_carga = Actividad(5, pos_cargador_cercano)
+                    self.actividades.insert(0, actividad_carga)
+                    agentes_pos = get_agentes_pos(self.model, pos_cargador_cercano)
+                    for i in agentes_pos:
+                        if isinstance(i, EstacionDeCarga):
+                            i.ocupada = True
+
+            elif actividad_actual.tipo_actividad == 4 and self.instancia_moviendo_paquete == None:
+                registrar_log(f'\n2.3 Se entro a act 4')
+                self.recorrido = []
+                # if self.model.get_banda_salida().hay_disponible(actividad_actual.tipo_pedido):
+                registrar_log(f"\nSi hay paquete disponible de tipo {actividad_actual.tipo_pedido}")
+                id_paquete, pos_paquete = self.get_paquete_cercano(actividad_actual.tipo_pedido)
+                registrar_log("\n=======Entre a la condicion rara")
+                registrar_log(f'\nid_paquete: {id_paquete}, pos_paquete: {pos_paquete}, tipo: {actividad_actual.tipo_pedido}, pos_actual: {self.pos}')
+                self.id_paquete_recoger = id_paquete
+                actividad_recoger = Actividad(3, pos_paquete, actividad_actual.tipo_pedido)
+                self.ocupado = True
+                self.actividades.insert(0, actividad_recoger)
+                # else:
+                #     registrar_log(f'\nNo hay paquete disponible de tipo {actividad_actual.tipo_pedido}')
 
             elif actividad_actual.pos_final in lista_de_vecinos:
+                registrar_log(f'\n3. Se encontro una pos final')
                 # Hacer el if-elif largo con los pasos para cada actividad
 
                 # Recoger paquete de BandaEntrada
                 if actividad_actual.tipo_actividad == 1:
+                        registrar_log(f'\n3.1 ACT 1')
                         agentes = get_agentes_pos(self.model, actividad_actual.pos_final)
                         if len(agentes) > 0:
                             for agente in agentes:
@@ -609,6 +651,7 @@ class RobotDeCarga(Agent):
                                     break
                 # Almacenar paquete en estante
                 elif actividad_actual.tipo_actividad == 2:
+                    registrar_log(f'\n3.2 ACT 2')
                     agentes = get_agentes_pos(self.model, actividad_actual.pos_final)
                     if len(agentes) > 0:
                         for agente in agentes:
@@ -618,6 +661,7 @@ class RobotDeCarga(Agent):
                                 break
                 # Recoger paquete de estante       
                 elif actividad_actual.tipo_actividad == 3:
+                    registrar_log(f'\n3.3 ACT 3')
                     agentes = get_agentes_pos(self.model, actividad_actual.pos_final)
                     instancia_estante = None
                     instancia_paquete = None
@@ -634,14 +678,18 @@ class RobotDeCarga(Agent):
 
                 # Entregar paquete en BandaSalida 
                 elif actividad_actual.tipo_actividad == 4 and self.instancia_moviendo_paquete:
+                    registrar_log(f'\n3.4 ACT 4')
                     agentes = get_agentes_pos(self.model, actividad_actual.pos_final)
                     if len(agentes) > 0:
                         for agente in agentes:
                             if isinstance(agente, BandaSalida):
                                 self.entregar_paquete_banda(self.instancia_moviendo_paquete, agente.pos, id_pedido=actividad_actual.id_pedido)
                                 break
+                elif actividad_actual.tipo_actividad == 5:
+                    registrar_log(f'\n3.5 ACT 5')
+                    self.recorrido.insert(0, actividad_actual.pos_final)
             
-            elif len(self.recorrido) == 0:
+            if len(self.recorrido) == 0:
                 registrar_log(f'\nSe agrego a recorrido con act actual de tipo: {actividad_actual.tipo_actividad}')
                 registrar_log(f'\nCamino de {self.pos} a {actividad_actual.pos_final}')
                 registrar_log(f'\nAntes recorrido era {self.recorrido}')
@@ -649,7 +697,22 @@ class RobotDeCarga(Agent):
                 registrar_log(f'\nSe calculo el camino {recorrido_actividad}')
                 self.recorrido += recorrido_actividad
                 registrar_log(f'\nAhora recorrido es {self.recorrido}')
-                #  
+                    
+            else:
+                if self.carga < 60 and self.instancia_moviendo_paquete == None and len(self.recorrido) == 0:
+                    pos_cargadores_disponibles = self.model.get_estaciones_disponibles()
+                    registrar_log(f'\n2.2 Se entro a menos de 60 de pila')
+                    registrar_log(f'\npos_cargadores_disponibles: {pos_cargadores_disponibles}')
+                    registrar_log(f'\n Se entro a carga menos de 60')
+                    pos_cargador_cercano = get_pos_cercana(self.pos, pos_cargadores_disponibles)
+                    if pos_cargador_cercano != self.pos:
+                        actividad_carga = Actividad(5, pos_cargador_cercano)
+                        self.recorrido.clear()
+                        self.actividades.insert(0, actividad_carga)
+                        agentes_pos = get_agentes_pos(self.model, pos_cargador_cercano)
+                        for i in agentes_pos:
+                            if isinstance(i, EstacionDeCarga):
+                                i.ocupada = True
              
 
         if self.actividades:
@@ -657,17 +720,18 @@ class RobotDeCarga(Agent):
         else:
             self.ocupado = False
 
-        if len(self.recorrido) == 0:
-            self.sig_pos = self.pos
-
+        if self.carga == 0 or len(self.recorrido) == 0:
+                self.sig_pos = self.pos
         else:
             self.sig_pos = self.recorrido[0]
             self.recorrido.pop(0)
+            self.carga -= 1
 
 
 
 
     def advance(self):
+        
         self.model.grid.move_agent(self, self.sig_pos)
         if self.instancia_moviendo_paquete:
             self.mover_paquete(self.instancia_moviendo_paquete)
@@ -782,6 +846,17 @@ class Habitacion(Model):
                     if isinstance(agente2, Estante) and agente2.lleno != True:
                         estantes_disponibles.append(agente2)
         return estantes_disponibles
+    
+    def get_estaciones_disponibles(self):
+        pos_estaciones_disponibles = []
+        for i in self.posiciones_estaciones_carga:
+            agentes = get_agentes_pos(self, i)
+            for a in agentes:
+                if isinstance(a, EstacionDeCarga) and a.ocupada == False:
+                    pos_estaciones_disponibles.append(i)
+        return pos_estaciones_disponibles
+
+
     
     def get_banda_entrada(self):
         agentes = get_agentes_pos(self, self.posiciones_bandas[0][1])

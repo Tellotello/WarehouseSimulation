@@ -9,7 +9,7 @@ MAX_NUMBER_ROBOTS = 20
 
 def agent_portrayal(agent):
     if isinstance(agent, Estante):
-        portrayal = {"Shape": "rect", "Filled": "true", "Color": "orange", "Layer": 1, "w": 0.9, "h": 0.9}
+        portrayal = {"Shape": "rect", "Filled": "true", "Color": "orange", "Layer": 1, "w": 0.9, "h": 0.9, "text_color": "black"}
         if agent.lleno:
             portrayal["Color"] = "red"
             portrayal["text"] = "Full"
@@ -24,9 +24,9 @@ def agent_portrayal(agent):
     elif isinstance(agent, EstacionDeCarga):
         return{"Shape": "rect", "Filled": "true", "Color": "gray", "Layer": 0, "w": 0.9, "h": 0.9}
     elif isinstance(agent, RobotDeCarga):
-        portrayal = {"Shape": "circle", "Filled": "true", "Color": "green", "Layer": 1, "r": 0.9}
+        portrayal = {"Shape": "circle", "Filled": "true", "Color": "green", "Layer": 1, "r": 0.9, "text_color": "white"}
         # portrayal["Color"] = "#ccbeaf"
-        portrayal["text"] = "H"
+        portrayal["text"] = f"{agent.carga}"
         return portrayal
     elif isinstance(agent, Paquete):
         portrayal = {"Shape": "rect", "Filled": "true", "Layer": 2, "w": 0.7, "h": 0.7}
