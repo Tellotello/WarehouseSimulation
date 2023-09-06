@@ -237,6 +237,7 @@ class BandaSalida(Agent):
             if isinstance(n, Paquete):
                 self.model.grid.remove_agent(n)
                 self.model.schedule.remove(n)
+                self.model.paquetes_entregados += 1
 
                             
         
@@ -1014,6 +1015,7 @@ class Almacen(Model):
                  ):
 
         self.num_agentes = num_agentes
+        self.paquetes_entregados = 0
         
         self.grid = MultiGrid(M, N, False)
         self.schedule = SimultaneousActivation(self)
@@ -1083,7 +1085,8 @@ class Almacen(Model):
             model_reporters={
                 # "Grid": get_grid, "Cargas": get_cargas,
                 #              "CeldasSucias": get_sucias
-                "Paquetes": get_cant_paquetes,
+                "Paquetes_almacenados": get_cant_paquetes,
+                "Paquetes_entregados": get_cant_paquetes_entregados,
             },
         )    
     
@@ -1167,3 +1170,6 @@ def get_cant_paquetes(model: Model):
                     contador_paquetes += 1
 
     return contador_paquetes
+
+def get_cant_paquetes_entregados(model: Model):
+    return model.paquetes_entregados

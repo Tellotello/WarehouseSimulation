@@ -38,14 +38,13 @@ def agent_portrayal(agent):
 grid = mesa.visualization.CanvasGrid(
     agent_portrayal, 15, 15, 300, 300)
 
-chart_celdas = mesa.visualization.ChartModule(
-    [{"Label": "Celdas", "Color": '#36A2EB', "label": "Celdas"}],
+chart_paquetes = mesa.visualization.ChartModule(
+    [{"Label": "Paquetes_almacenados", "Color": '#36A2EB', "label": "Paquetes almacenados"}],
     50, 200,
     data_collector_name="datacollector"
 )
-
-chart_paquetes = mesa.visualization.ChartModule(
-    [{"Label": "Paquetes", "Color": '#36A2EB', "label": "Paquetes"}],
+chart_paquetes_entregados = mesa.visualization.ChartModule(
+    [{"Label": "Paquetes_entregados", "Color": '#36A2EB', "label": "Paquetes entregados"}],
     50, 200,
     data_collector_name="datacollector"
 )
@@ -73,7 +72,7 @@ model_params = {
 # )
 
 server = mesa.visualization.ModularServer(
-    Almacen, [grid, chart_celdas, chart_paquetes],
+    Almacen, [grid, chart_paquetes, chart_paquetes_entregados],
     "Almacén automatizado",
     model_params, 8521
 )
