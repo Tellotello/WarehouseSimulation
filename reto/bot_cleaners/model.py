@@ -22,10 +22,10 @@ def registrar_log(message):
     """
     Funcion para debug
     """
-    with open("log.txt", 'a') as log:
-        log.write(message)
-        log.close()
-    # pass
+    # with open("log.txt", 'a') as log:
+    #     log.write(message)
+    #     log.close()
+    pass
 
 
 
@@ -263,6 +263,9 @@ class BandaEntrada(Agent):
     
 
     def hay_paquete(self):
+        registrar_log('\nPaquetes BandaEntrada:')
+        for p in self.paquetes:
+            registrar_log(f'\n id_robot: {p.id_robot}, id_paquete: {p.id_paquete}')
         for i in self.paquetes:
             if i.id_robot == -1:
                 return True
@@ -271,7 +274,7 @@ class BandaEntrada(Agent):
     def registrar_paquetes(self):
         agentes_banda = get_agentes_pos(self.model, self.pos)
         for i in agentes_banda:
-                if isinstance(i, Paquete) and self.paquete_registrado(i.unique_id) != True:
+                if isinstance(i, Paquete) and self.paquete_registrado(i.unique_id) == False:
                     nuevo_contrato = ContratoPaquete(id_robot=-1, id_paquete=i.unique_id)
                     self.paquetes.append(nuevo_contrato)
                     
@@ -298,6 +301,7 @@ class BandaEntrada(Agent):
                 if len(i.actividades) < 3:
                     pos_robots.append(i.pos)
         if pos_robots:
+            registrar_log(f'\nRobots disponibles: {pos_robots}')
             
             pos_min_distancia = get_pos_cercana(self.pos, pos_robots)
 
@@ -308,6 +312,8 @@ class BandaEntrada(Agent):
                     nueva_actividad = Actividad(1, self.pos)
                     i.actividades.append(nueva_actividad)
                     break
+        else:
+            registrar_log(f'\nNo se encontraron robots disponibles')
             
 
     
@@ -329,7 +335,10 @@ class BandaEntrada(Agent):
     def step(self):
         self.registrar_paquetes()
         if self.hay_paquete():
+            registrar_log(f'\nHay paquete en bandaEntrada')
             self.contratar_robot_recoger()
+        else:
+            registrar_log(f'\nNo hay paquete en bandaEntrada')
 
         
 class EstacionDeCarga(Agent):
@@ -527,7 +536,8 @@ class RobotDeCarga(Agent):
         """
         for i in range(len(self.actividades)-1, -1, -1):
             if self.actividades[i].tipo_actividad == 1:
-                contrato_actividad = ContratoActividad(None, self.actividades[0])
+                contrato_actividad = ContratoActividad(None, self.actividades[i])
+                registrar_log(f'\nEl robot {self.unique_id} ofrecio la act({contrato_actividad.actividad.tipo_actividad}, {contrato_actividad.actividad.pos_final})')
                 self.actividades_disponibles.append(contrato_actividad)
                 self.actividades.pop(i)
                 break
@@ -551,8 +561,8 @@ class RobotDeCarga(Agent):
     
     def irse_reposo(self):
         if len(self.actividades) == 0 or self.actividades[0].tipo_actividad == 4:
-            act_reposar = Actividad(6, (5+self.unique_id, 7))
-            self.actividades.append(act_reposar)
+            act_reposar = Actividad(6, self.model.pos_reposo_robots[self.unique_id])
+            self.actividades.insert(0, act_reposar)
 
     def hay_robot(self, pos):
         agentes_pos = get_agentes_pos(self.model, pos)
@@ -789,6 +799,7 @@ class RobotDeCarga(Agent):
                 actividad_recoger = Actividad(3, pos_paquete, actividad_actual.tipo_pedido)
                 self.ocupado = True
                 self.actividades.insert(0, actividad_recoger)
+                actividad_actual = self.actividades[0]
 
             elif actividad_actual.pos_final in lista_de_vecinos:
                 registrar_log(f'\n3. Se encontro una pos final')
@@ -889,9 +900,18 @@ class RobotDeCarga(Agent):
             # if self.recorrido[0] in self.get_sig_pos_robots() or self.hay_robot(self.recorrido[0]) == True and self.carga != 100:
             
             if (self.recorrido[0] in self.get_sig_pos_robots() or self.hay_robot(self.recorrido[0])) and self.carga != 100:
-                
+                # Checar si hay mas de un robot vecino
+                # cant_robots_vecinos = 0
+                # celdas_vecinas = get_celdas_vecinas(self.pos)
+                # for i in celdas_vecinas:
+                #     agentes = get_agentes_pos(i)
+                #     for a in agentes:
+                #         if isinstance(a)
+
                 # Obtener instancia del robot en tu siguiente posicion
                 robot_2 = None
+
+
                 # agentes = self.model.grid.get_cell_list_contents([self.recorrido[0]])
 
                 agentes = get_agentes_pos(self.model, self.recorrido[0])
@@ -909,9 +929,9 @@ class RobotDeCarga(Agent):
                 # Si hay un robot en tu siguiente posicion
                 if len(self.actividades) > 1 and ((robot_2.actividades and robot_2.actividades[0].tipo_actividad == 4) or len(robot_2.actividades) == 0):
                     self.ofertar_actividad()
-                    if len(robot_2.actividades) == 0 or (robot_2.actividades and robot_2.actividades[0].tipo_actividad == 4):
-                        act_reposar = Actividad(6, (5+robot_2.unique_id, 7))
-                        robot_2.actividades.insert(0, act_reposar)
+                    # if len(robot_2.actividades) == 0 or (robot_2.actividades and robot_2.actividades[0].tipo_actividad == 4):
+                    #     act_reposar = Actividad(6, self.model.pos_reposo_robots[self.unique_id])
+                    #     robot_2.actividades.insert(0, act_reposar)
                     self.quedarse_en_pos()
 
 
@@ -1010,6 +1030,7 @@ class Almacen(Model):
             [(9, 2), (9, 3), (9, 4), (9, 5), (10, 2), (10, 3), (10, 4), (10, 5)],
             [(9, 9), (9, 10), (9, 11), (9, 12), (10, 9), (10, 10), (10, 11), (10, 12)]
         ]
+        self.pos_reposo_robots = [(1, 4), (13, 4), (1, 10), (13, 10)]
 
         self.posiciones_estaciones_carga = [(2, 0), (12, 0), (2, 14), (12, 14)]
 
